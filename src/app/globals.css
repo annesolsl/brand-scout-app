@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-slate-950 text-slate-100 antialiased;
+}
+
+.markdown-table table {
+  @apply w-full border-collapse text-sm;
+}
+
+.markdown-table thead tr {
+  @apply bg-slate-900;
+}
+
+.markdown-table th,
+.markdown-table td {
+  @apply border border-slate-700 px-3 py-2 align-top;
+}
+
+.markdown-table p {
+  @apply mb-2 leading-relaxed;
+}
+
+.analysis-markdown h2 {
+  @apply mb-3 mt-8 text-base font-semibold tracking-tight text-white first:mt-0;
+}
+
+.analysis-markdown h3 {
+  @apply mb-2 mt-6 text-sm font-semibold text-slate-100;
+}
+
+.analysis-markdown h4 {
+  @apply mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-slate-400;
+}
+
+.analysis-markdown strong {
+  @apply font-semibold text-slate-50;
+}
+
+.analysis-markdown ul {
+  @apply my-3 list-disc space-y-2 pl-5 text-slate-300;
+}
