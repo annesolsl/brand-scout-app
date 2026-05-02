@@ -3,11 +3,45 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
-  @apply bg-slate-950 text-slate-100 antialiased;
+  @apply bg-orbit-canvas text-orbit-text antialiased;
+}
+
+.orbit-glow {
+  background: radial-gradient(circle at 50% 45%, rgba(244, 244, 245, 0.9) 0%, transparent 55%);
+}
+
+.orbit-arm {
+  width: var(--orbit-d);
+  height: var(--orbit-d);
+  margin-left: calc(var(--orbit-d) / -2);
+  margin-top: calc(var(--orbit-d) / -2);
+  animation: orbit-rotate var(--orbit-speed, 10s) linear infinite;
+}
+
+.orbit-satellite {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  margin-top: -5px;
+  border-radius: 9999px;
+  background: #0f172a;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6);
+}
+
+@keyframes orbit-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .markdown-table table {
@@ -15,34 +49,34 @@ body {
 }
 
 .markdown-table thead tr {
-  @apply bg-slate-900;
+  @apply bg-zinc-100;
 }
 
 .markdown-table th,
 .markdown-table td {
-  @apply border border-slate-700 px-3 py-2 align-top;
+  @apply border border-zinc-200 px-3 py-2 align-top text-zinc-800;
 }
 
 .markdown-table p {
-  @apply mb-2 leading-relaxed;
+  @apply mb-2 leading-relaxed text-zinc-700;
 }
 
 .analysis-markdown h2 {
-  @apply mb-3 mt-8 text-base font-semibold tracking-tight text-white first:mt-0;
+  @apply mb-3 mt-8 text-base font-semibold tracking-tight text-orbit-text first:mt-0;
 }
 
 .analysis-markdown h3 {
-  @apply mb-2 mt-6 text-sm font-semibold text-slate-100;
+  @apply mb-2 mt-6 text-sm font-semibold text-zinc-900;
 }
 
 .analysis-markdown h4 {
-  @apply mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-slate-400;
+  @apply mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-zinc-500;
 }
 
 .analysis-markdown strong {
-  @apply font-semibold text-slate-50;
+  @apply font-semibold text-zinc-900;
 }
 
 .analysis-markdown ul {
-  @apply my-3 list-disc space-y-2 pl-5 text-slate-300;
+  @apply my-3 list-disc space-y-2 pl-5 text-zinc-700;
 }

@@ -3,7 +3,15 @@
 import { FormEvent, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { OrbitAppShell } from "@/components/OrbitAppShell";
+import { SatelliteOrbitLoader } from "@/components/SatelliteOrbitLoader";
 import { BrandAnalysis } from "@/lib/types";
+
+function truncateUrl(url: string, max = 48) {
+  const t = url.trim();
+  if (t.length <= max) return t;
+  return `${t.slice(0, max - 1)}…`;
+}
 
 export default function Home() {
   const [url, setUrl] = useState("");
@@ -41,49 +49,66 @@ export default function Home() {
     }
   }
 
-  return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 px-5 py-10">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <header className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-2xl backdrop-blur">
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Orbit-style dashboard</p>
-          <h1 className="mt-2 text-3xl font-semibold text-white">Brand Scout</h1>
-          <p className="mt-2 max-w-2xl text-sm text-slate-300">
-            Paste a URL to scrape written content, then run copywriting and competitor-profiling analysis.
-          </p>
+  const loaderSubtitle = url.trim() ? truncateUrl(url.trim()) : "Website URL";
 
-          <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-3 md:flex-row">
-            <input
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://example.com"
-              className="h-12 flex-1 rounded-xl border border-slate-700 bg-slate-950/80 px-4 text-sm text-slate-100 outline-none ring-primary transition focus:ring-2"
-            />
+  return (
+    <OrbitAppShell
+      breadcrumbs={[{ label: "Orbit" }, { label: "Mission Control" }]}
+      signedInAs="scout@orbit.app"
+    >
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+        <section className="rounded-[20px] border border-orbit-border bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <h1 className="text-lg font-semibold text-orbit-text">Analysis configuration</h1>
             <button
               type="submit"
+              form="scout-analysis-form"
               disabled={loading || !url.trim()}
-              className="h-12 min-w-44 rounded-xl bg-primary px-6 text-sm font-semibold text-white transition hover:bg-primarySoft disabled:cursor-not-allowed disabled:opacity-60"
+              className="h-10 shrink-0 rounded-lg bg-orbit-navy px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {loading ? "Scouting..." : "Scout Site"}
+              {loading ? "Scouting…" : "Scout Site"}
             </button>
-          </form>
-          {error ? <p className="mt-3 text-sm text-rose-300">{error}</p> : null}
-        </header>
+          </div>
+
+          {loading ? (
+            <SatelliteOrbitLoader
+              title="Running brand analysis"
+              subtitle={loaderSubtitle}
+              status="Aggregating signals across page content…"
+            />
+          ) : (
+            <form id="scout-analysis-form" onSubmit={onSubmit} className="mt-6 space-y-2">
+              <label htmlFor="scout-url" className="block text-xs font-semibold text-zinc-900">
+                Website URL <span className="text-red-600">*</span>
+              </label>
+              <input
+                id="scout-url"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://example.com"
+                autoComplete="url"
+                className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 shadow-sm outline-none ring-orbit-navy/20 transition placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-2"
+              />
+              {error ? <p className="pt-2 text-sm text-red-600">{error}</p> : null}
+            </form>
+          )}
+        </section>
 
         {hasResult && result ? (
           <section className="grid gap-6 lg:grid-cols-12">
-            <article className="rounded-2xl border border-slate-800 bg-card p-6 lg:col-span-8">
-              <h2 className="text-lg font-semibold text-slate-100">Structure analysis</h2>
-              <p className="mt-1 text-xs text-slate-400">
-                Source: <span className="text-slate-200">{result.sourceUrl}</span>
+            <article className="rounded-[20px] border border-orbit-border bg-white p-6 shadow-sm lg:col-span-8">
+              <h2 className="text-lg font-semibold text-orbit-text">Structure analysis</h2>
+              <p className="mt-1 text-xs text-zinc-500">
+                Source: <span className="font-medium text-zinc-800">{result.sourceUrl}</span>
               </p>
-              <div className="analysis-markdown markdown-table mt-5 overflow-x-auto text-sm leading-relaxed text-slate-200">
+              <div className="analysis-markdown markdown-table mt-5 overflow-x-auto text-sm leading-relaxed">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{result.analysisMarkdown}</ReactMarkdown>
               </div>
             </article>
 
             <aside className="space-y-4 lg:col-span-4">
-              <div className="rounded-2xl border border-slate-800 bg-card p-5 shadow-glow">
-                <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
+              <div className="rounded-[20px] border border-orbit-border bg-white p-5 shadow-sm">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                   Tone of Voice
                 </h3>
                 <div className="mt-4 space-y-3 text-sm">
@@ -94,29 +119,29 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-slate-800 bg-card p-5">
-                <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
+              <div className="rounded-[20px] border border-orbit-border bg-white p-5 shadow-sm">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                   Proof Signals
                 </h3>
-                <ul className="mt-3 space-y-2 text-sm text-slate-200">
+                <ul className="mt-3 space-y-2 text-sm text-zinc-800">
                   {result.toneSummary.proofSignals.map((signal) => (
-                    <li key={signal} className="rounded-lg border border-slate-700 px-3 py-2">
+                    <li key={signal} className="rounded-lg border border-zinc-200 bg-zinc-50/80 px-3 py-2">
                       {signal}
                     </li>
                   ))}
                   {!result.toneSummary.proofSignals.length ? (
-                    <li className="text-slate-400">No proof signals detected.</li>
+                    <li className="text-zinc-500">No proof signals detected.</li>
                   ) : null}
                 </ul>
               </div>
 
-              <div className="rounded-2xl border border-slate-800 bg-card p-5">
-                <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
+              <div className="rounded-[20px] border border-orbit-border bg-white p-5 shadow-sm">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                   Scanned Pages
                 </h3>
-                <ul className="mt-3 space-y-2 text-xs text-slate-300">
+                <ul className="mt-3 space-y-2 text-xs text-zinc-600">
                   {result.pagesScanned.map((page) => (
-                    <li key={page} className="truncate rounded border border-slate-700 px-2 py-1">
+                    <li key={page} className="truncate rounded-lg border border-zinc-200 px-2 py-1.5">
                       {page}
                     </li>
                   ))}
@@ -124,21 +149,21 @@ export default function Home() {
               </div>
             </aside>
           </section>
-        ) : (
-          <section className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 p-10 text-center text-sm text-slate-400">
+        ) : !loading ? (
+          <section className="rounded-[20px] border border-dashed border-zinc-300 bg-white/80 p-10 text-center text-sm text-zinc-500 shadow-sm">
             Submit a website URL to generate a narrative structure analysis and tone-of-voice card.
           </section>
-        )}
+        ) : null}
       </div>
-    </main>
+    </OrbitAppShell>
   );
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-slate-800 px-3 py-2">
-      <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="mt-1 text-slate-100">{value}</p>
+    <div className="rounded-lg border border-zinc-200 bg-zinc-50/80 px-3 py-2">
+      <p className="text-xs uppercase tracking-wide text-zinc-500">{label}</p>
+      <p className="mt-1 font-medium text-zinc-900">{value}</p>
     </div>
   );
 }

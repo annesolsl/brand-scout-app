@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Scout Site",
+  title: "Brand Scout · Orbit",
   description: "Brand analysis dashboard"
 };
 
