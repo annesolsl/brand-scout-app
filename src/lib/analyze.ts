@@ -1,5 +1,6 @@
 import { BrandAnalysis, ToneProfile } from "@/lib/types";
 
+// Heuristic analysis only (no LLM). Behavioral spec: ./brandAnalysisSystemPrompt.ts
 type ScrapedPage = {
   url: string;
   text: string;

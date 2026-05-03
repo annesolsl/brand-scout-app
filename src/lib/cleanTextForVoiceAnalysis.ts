@@ -3,7 +3,17 @@ import type { ScrapedPage } from "./scrape";
 /**
  * Removes generic e-commerce utility / UI copy so brand voice analysis focuses on
  * narrative, descriptive, and persuasive copy—not buttons, checkout, or nav.
+ *
+ * Aligns with negative constraints in `brandAnalysisSystemPrompt.ts`.
  */
+
+/** Strip these substrings from the blob first (even mid-sentence), then sentence-filter. */
+const STRIP_SUBSTRING_PATTERNS: RegExp[] = [
+  /Taxes, discounts and shipping calculated at checkout/gi,
+  /Estimated total/gi,
+  /\bVIEW OFFERS\b/gi,
+  /\bADD TO CART\b/gi
+];
 
 const UTILITY_PHRASES: RegExp[] = [
   /taxes,?\s*discounts?\s*(and\s*)?shipping/i,
@@ -84,6 +94,14 @@ function normalizeWs(s: string): string {
   return s.replace(/\s+/g, " ").trim();
 }
 
+function stripBoilerplatePhrases(blob: string): string {
+  let t = blob;
+  for (const re of STRIP_SUBSTRING_PATTERNS) {
+    t = t.replace(re, " ");
+  }
+  return normalizeWs(t);
+}
+
 function matchesUtilityPhrase(s: string): boolean {
   const t = s.trim();
   for (const re of UTILITY_PHRASES) {
@@ -137,7 +155,8 @@ function splitIntoSentences(blob: string): string[] {
 }
 
 export function cleanTextForVoiceAnalysis(raw: string): string {
-  const sentences = splitIntoSentences(raw);
+  const stripped = stripBoilerplatePhrases(raw);
+  const sentences = splitIntoSentences(stripped);
   const kept = sentences.filter(shouldKeepSentence);
   return normalizeWs(kept.join(" "));
 }
