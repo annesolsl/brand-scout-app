@@ -1,6 +1,6 @@
 import * as cheerio from "cheerio";
 
-type ScrapedPage = {
+export type ScrapedPage = {
   url: string;
   text: string;
 };

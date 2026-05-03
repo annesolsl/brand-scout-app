@@ -7,6 +7,10 @@ type RequestBody = {
   url?: string;
 };
 
+/**
+ * Brand voice / tone analysis with utility & UI copy stripped before analysis.
+ * Prefer this endpoint when the consumer should ignore cart, nav, and transactional chrome.
+ */
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as RequestBody;

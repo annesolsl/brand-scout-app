@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { OrbitAppShell } from "@/components/OrbitAppShell";
 import { SatelliteOrbitLoader } from "@/components/SatelliteOrbitLoader";
+import { downloadBrandAnalysisPdf } from "@/lib/downloadBrandAnalysisPdf";
 import { BrandAnalysis } from "@/lib/types";
 
 function truncateUrl(url: string, max = 48) {
@@ -53,7 +54,7 @@ export default function Home() {
 
   return (
     <OrbitAppShell
-      breadcrumbs={[{ label: "Orbit" }, { label: "Mission Control" }]}
+      breadcrumbs={[{ label: "Orbit" }, { label: "Brand Scout" }]}
       signedInAs="scout@orbit.app"
     >
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
@@ -97,10 +98,21 @@ export default function Home() {
         {hasResult && result ? (
           <section className="grid gap-6 lg:grid-cols-12">
             <article className="rounded-[20px] border border-orbit-border bg-white p-6 shadow-sm lg:col-span-8">
-              <h2 className="text-lg font-semibold text-orbit-text">Structure analysis</h2>
-              <p className="mt-1 text-xs text-zinc-500">
-                Source: <span className="font-medium text-zinc-800">{result.sourceUrl}</span>
-              </p>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-orbit-text">Structure analysis</h2>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    Source: <span className="font-medium text-zinc-800">{result.sourceUrl}</span>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => downloadBrandAnalysisPdf(result)}
+                  className="h-9 shrink-0 rounded-lg border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-800 shadow-sm transition hover:bg-zinc-50"
+                >
+                  Download PDF
+                </button>
+              </div>
               <div className="analysis-markdown markdown-table mt-5 overflow-x-auto text-sm leading-relaxed">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{result.analysisMarkdown}</ReactMarkdown>
               </div>
