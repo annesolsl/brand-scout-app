@@ -2,7 +2,10 @@ import * as cheerio from "cheerio";
 
 export type ScrapedPage = {
   url: string;
+  /** Visible body text with headings removed—used for voice / tone analysis. */
   text: string;
+  /** `h1`–`h6` outline for site structure only; not scored as narrative voice. */
+  structureText: string;
 };
 
 const KEY_PATH_HINTS = [
@@ -25,10 +28,28 @@ function normalizeInputUrl(input: string): string {
     : `https://${value}`;
 }
 
-function extractVisibleText(html: string): string {
+function extractPageCorpora(html: string): { voiceText: string; structureText: string } {
   const $ = cheerio.load(html);
   $("script, style, noscript, iframe, svg").remove();
-  return $("body").text().replace(/\s+/g, " ").trim();
+
+  const headings: string[] = [];
+  $("h1, h2, h3, h4, h5, h6").each((_, el) => {
+    const t = $(el).text().replace(/\s+/g, " ").trim();
+    if (t && t.length <= 220) headings.push(t);
+  });
+
+  $("title").remove();
+  $("h1, h2, h3, h4, h5, h6").remove();
+  const voiceText = $("body").text().replace(/\s+/g, " ").trim();
+
+  const uniqueHeadings: string[] = [];
+  for (const h of headings) {
+    const prev = uniqueHeadings[uniqueHeadings.length - 1];
+    if (!prev || prev.toLowerCase() !== h.toLowerCase()) uniqueHeadings.push(h);
+  }
+  const structureText = uniqueHeadings.join(" · ");
+
+  return { voiceText, structureText };
 }
 
 function pickRelevantLinks(html: string, rootUrl: URL): string[] {
@@ -52,7 +73,7 @@ function pickRelevantLinks(html: string, rootUrl: URL): string[] {
   return [...links].slice(0, 7);
 }
 
-async function fetchPageText(url: string): Promise<string> {
+async function fetchPageCorpora(url: string): Promise<{ voiceText: string; structureText: string }> {
   const res = await fetch(url, {
     headers: {
       "User-Agent": "BrandScout/1.0 (+https://example.com)"
@@ -63,7 +84,7 @@ async function fetchPageText(url: string): Promise<string> {
     throw new Error(`Failed to fetch ${url} (${res.status})`);
   }
   const html = await res.text();
-  return extractVisibleText(html);
+  return extractPageCorpora(html);
 }
 
 export async function scrapeSite(urlInput: string): Promise<ScrapedPage[]> {
@@ -75,15 +96,17 @@ export async function scrapeSite(urlInput: string): Promise<ScrapedPage[]> {
     throw new Error(`Could not load homepage (${homeRes.status}).`);
   }
   const homeHtml = await homeRes.text();
-  const homeText = extractVisibleText(homeHtml);
+  const home = extractPageCorpora(homeHtml);
   const candidateLinks = pickRelevantLinks(homeHtml, rootUrl);
 
-  const pages: ScrapedPage[] = [{ url: normalized, text: homeText }];
+  const pages: ScrapedPage[] = [
+    { url: normalized, text: home.voiceText, structureText: home.structureText }
+  ];
 
   for (const link of candidateLinks) {
     try {
-      const text = await fetchPageText(link);
-      pages.push({ url: link, text });
+      const { voiceText, structureText } = await fetchPageCorpora(link);
+      pages.push({ url: link, text: voiceText, structureText });
     } catch {
       // Continue even if some pages fail.
     }

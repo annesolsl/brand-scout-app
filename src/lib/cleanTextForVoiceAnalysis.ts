@@ -11,8 +11,25 @@ import type { ScrapedPage } from "./scrape";
 const STRIP_SUBSTRING_PATTERNS: RegExp[] = [
   /Taxes, discounts and shipping calculated at checkout/gi,
   /Estimated total/gi,
-  /\bVIEW OFFERS\b/gi,
-  /\bADD TO CART\b/gi
+  /\bVIEW OFFERS?\b/gi,
+  /\bADD TO CART\b/gi,
+  /\bFREE SHIPPING\b/gi,
+  /\bFree Shipping\b/g,
+  /\bSUBSCRIBE NOW\b/gi,
+  /\bSubscribe Now\b/g,
+  /\bSubscribe to any product\b/gi,
+  /\bSave\s+\d{1,2}%\b/gi,
+  /\bSave\s+\d{1,2}%\s+on\b/gi,
+  /\b\d{1,2}%\s*off\b/gi,
+  /\b\d{1,2}%\s*OFF\b/g,
+  /\bSave\s+\d{1,2}%\s+today\b/gi,
+  /\bauto[- ]?deliver(y|ies)?\b/gi,
+  /\bsubscribe\s*(?:&|and|\+)\s*save\b/gi,
+  /\d+%\s*off\s+forever/gi,
+  /\bSave All Year Long\b/gi,
+  /\bOffers? Start Strong\b/gi,
+  /\bShop All\b/gi,
+  /\bNew Arrivals\b/gi
 ];
 
 const UTILITY_PHRASES: RegExp[] = [
@@ -28,6 +45,19 @@ const UTILITY_PHRASES: RegExp[] = [
   /estimated tax/i,
   /promo code|coupon code|gift card/i,
   /free shipping on orders over/i,
+  /\bfree shipping\b/i,
+  /\bview offers?\b/i,
+  /\bsubscribe\s+now\b/i,
+  /\bsubscribe\s+to\s+any\b/i,
+  /\bsubscribe\s*(?:&|and|\+)\s*save\b/i,
+  /\bsave\s+\d{1,2}%\b/i,
+  /\b\d{1,2}%\s*off\b/i,
+  /\bget\s+\d+%\s*off\b/i,
+  /\b\d+%\s*off\s+forever\b/i,
+  /\bsave all year\b/i,
+  /\boffers?\s+start\b/i,
+  /\bshop all\b/i,
+  /\bnew arrivals\b/i,
   /free \w+ on orders over\s*\$?\d/i,
   /orders?\s+over\s*\$?\d+\s*(qualify|ship free|get free)/i,
   /^\s*subscribe\s+(to\s+)?(our\s+)?(newsletter|emails?)\s*$/i,
@@ -37,6 +67,34 @@ const UTILITY_PHRASES: RegExp[] = [
   /^\s*menu\s*$/i
 ];
 
+/**
+ * If true, this string must not be quoted as “representative” voice evidence
+ * (promotional / nav / offer language).
+ */
+const SNIPPET_EXCLUDE: RegExp[] = [
+  /\bview offers?\b/i,
+  /\bfree shipping\b/i,
+  /\bsubscribe\s+now\b/i,
+  /\bsubscribe\s+to\s+any\b/i,
+  /\bsubscribe\s*(?:&|and|\+)\s*save\b/i,
+  /\bsave\s+\d{1,2}%\b/i,
+  /\b\d{1,2}%\s*off\b/i,
+  /\bget\s+\d+%\s*off\b/i,
+  /\b\d+%\s*off\s+forever\b/i,
+  /\bsave all year\b/i,
+  /\boffers?\s+start\s+strong\b/i,
+  /\bshop all\b/i,
+  /\bnew arrivals\b/i,
+  /\blimited time offer\b/i,
+  /\bact now\b/i
+];
+
+export function snippetContainsExcludedPromo(text: string): boolean {
+  const t = text.trim();
+  if (!t) return true;
+  return SNIPPET_EXCLUDE.some((re) => re.test(t));
+}
+
 const LIKELY_BUTTON_LABELS = new Set(
   [
     "add to cart",
@@ -44,6 +102,7 @@ const LIKELY_BUTTON_LABELS = new Set(
     "buy now",
     "shop now",
     "view offers",
+    "view offer",
     "view all",
     "log in",
     "login",
@@ -73,6 +132,9 @@ const LIKELY_BUTTON_LABELS = new Set(
     "get started",
     "join now",
     "subscribe",
+    "subscribe now",
+    "subscribe & save",
+    "subscribe and save",
     "unsubscribe",
     "account",
     "wishlist",
@@ -92,6 +154,26 @@ const LIKELY_BUTTON_LABELS = new Set(
 
 function normalizeWs(s: string): string {
   return s.replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Collapses immediate repeats of the same word or short phrase (e.g. nav: "About Us About Us").
+ */
+export function collapseAdjacentRepeatedPhrases(blob: string): string {
+  let t = normalizeWs(blob);
+  let prev = "";
+  while (prev !== t) {
+    prev = t;
+    for (let words = 6; words >= 1; words--) {
+      const chunk =
+        words === 1
+          ? String.raw`(\w{3,})`
+          : String.raw`((?:\w+\s+){${words - 1}}\w+)`;
+      const re = new RegExp(String.raw`\b${chunk}\s+\1(?:\s+\1)*\b`, "gi");
+      t = normalizeWs(t.replace(re, "$1"));
+    }
+  }
+  return t;
 }
 
 function stripBoilerplatePhrases(blob: string): string {
@@ -155,15 +237,16 @@ function splitIntoSentences(blob: string): string[] {
 }
 
 export function cleanTextForVoiceAnalysis(raw: string): string {
-  const stripped = stripBoilerplatePhrases(raw);
+  const stripped = collapseAdjacentRepeatedPhrases(stripBoilerplatePhrases(raw));
   const sentences = splitIntoSentences(stripped);
   const kept = sentences.filter(shouldKeepSentence);
-  return normalizeWs(kept.join(" "));
+  return collapseAdjacentRepeatedPhrases(normalizeWs(kept.join(" ")));
 }
 
 export function cleanScrapedPagesForVoice(pages: ScrapedPage[]): ScrapedPage[] {
   return pages.map((p) => ({
     url: p.url,
-    text: cleanTextForVoiceAnalysis(p.text)
+    text: cleanTextForVoiceAnalysis(p.text),
+    structureText: p.structureText ?? ""
   }));
 }

@@ -1,3 +1,7 @@
+import {
+  collapseAdjacentRepeatedPhrases,
+  snippetContainsExcludedPromo
+} from "@/lib/cleanTextForVoiceAnalysis";
 import { BrandAnalysis, ToneProfile } from "@/lib/types";
 
 // Heuristic analysis only (no LLM). Behavioral spec: ./brandAnalysisSystemPrompt.ts
@@ -76,7 +80,7 @@ function extractProofSignals(text: string): string[] {
 }
 
 function detectCtaStyle(text: string): string {
-  const strong = countMatches(text, /\b(shop now|add to cart|start|subscribe|get|buy)\b/gi);
+  const strong = countMatches(text, /\b(shop now|add to cart|start|get|buy)\b/gi);
   const weak = countMatches(text, /\b(learn more|submit|click here)\b/gi);
   return strong >= weak ? "Action-oriented ecommerce CTAs" : "Mixed or softer CTAs";
 }
@@ -100,6 +104,7 @@ function pickSubstantiveSnippet(fullText: string, max = 200): string | null {
     const p = part.trim();
     if (p.length < 50) continue;
     if (skip.test(p)) continue;
+    if (snippetContainsExcludedPromo(p)) continue;
     if (/^[\d\s$€£]+$/.test(p)) continue;
     return p.length <= max ? p : `${p.slice(0, max - 1)}…`;
   }
@@ -109,6 +114,13 @@ function pickSubstantiveSnippet(fullText: string, max = 200): string | null {
 function clipEvidence(text: string, max = 160): string | null {
   const cleaned = text.replace(/\s+/g, " ").trim();
   if (cleaned.length < 40) return null;
+  const byClause = cleaned.split(/[,;]\s+/).map((c) => c.trim()).filter((c) => c.length >= 40);
+  for (const chunk of byClause) {
+    if (!snippetContainsExcludedPromo(chunk)) {
+      return chunk.length <= max ? chunk : `${chunk.slice(0, max - 1)}…`;
+    }
+  }
+  if (snippetContainsExcludedPromo(cleaned)) return null;
   return cleaned.length <= max ? cleaned : `${cleaned.slice(0, max - 1)}…`;
 }
 
@@ -185,7 +197,8 @@ function openingParagraph(brand: string, text: string, axes: ReturnType<typeof s
         ? "authority and proof-led, with an emphasis on credibility"
         : "practical and outcome-focused";
 
-  const evidenceSource = pickSubstantiveSnippet(text);
+  const rawEvidence = pickSubstantiveSnippet(text);
+  const evidenceSource = rawEvidence ? collapseAdjacentRepeatedPhrases(rawEvidence) : null;
   const evidenceClause = evidenceSource
     ? ` Representative on-page language includes: “${evidenceSource}”`
     : "";
